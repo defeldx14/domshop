@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Domshop",
-  "short_name": "Domshop",
-  "description": "Domshop apps and games.",
+  "name": "Dom’s Workshop",
+  "short_name": "Dom’s Workshop",
+  "description": "Apps, learning tools, and games from Dom’s Workshop.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
@@ -11,22 +11,23 @@
   "theme_color": "#111315",
   "icons": [
     {
-      "src": "assets/icons/icon-192.png",
+      "src": "assets/icons/workshop-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icons/icon-512.png",
+      "src": "assets/icons/workshop-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icons/icon-maskable-512.png",
+      "src": "assets/icons/workshop-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ]
 }
+
