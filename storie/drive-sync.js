@@ -4,11 +4,11 @@ const SCOPE='https://www.googleapis.com/auth/drive.appdata',API='https://www.goo
 function create(options){
  const C=g.DomshopSyncCore,key='domshop.sync.'+options.app;
  let token='',expires=0,running=false,client=null,remote=null;
- let doc=C.empty(options.app);
+ let doc=C.empty(options.app),initialized=false;
  try{const cached=localStorage.getItem(key);if(cached)doc=C.valid(JSON.parse(cached),options.app)}catch{options.notify('Sync metadata could not be read. Export a backup before syncing.');}
  function status(text){const el=document.getElementById('drive-status');if(el)el.textContent=text;options.notify(text);}
  function persist(){localStorage.setItem(key,JSON.stringify(doc));}
- function capture(){doc=C.capture(doc,options.toItems(options.get()),()=>crypto.randomUUID());persist();return doc;}
+ function capture(){doc=C.capture(doc,options.toItems(options.get()),()=>crypto.randomUUID());if(!initialized&&options.initialAt){for(const [k,r]of Object.entries(doc.records))r.at=options.initialAt(k,r.value);}initialized=true;persist();return doc;}
  async function call(path,init={}){
   if(!token||Date.now()>=expires){token='';throw Error('Connection expired. Connect Google Drive again.');}
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),25000);
@@ -63,6 +63,7 @@ function create(options){
   return '<div class="box"><h2>Google Drive sync</h2><p>Sync progress between devices using the same Google account. Local saves still work offline.</p><label><input type="checkbox" id="drive-consent"> I will use my intended Google account and merge this device’s progress.</label><div class="row"><button type="button" data-drive="connect">Connect Google Drive</button><button type="button" data-drive="sync">Sync now</button><button type="button" data-drive="disconnect">Disconnect</button></div><p id="drive-status" role="status">'+(token?'Connected.':'Not connected.')+'</p><small>'+(last?'Last sync: '+new Date(last).toLocaleString()+'. ':'')+'Private app data only. Connect again after reopening or when authorization expires. If the same lesson changes on two devices, the latest edit wins. Keep backups for older attempts.</small></div>';
  }
  document.addEventListener('click',e=>{const a=e.target.closest('[data-drive]')?.dataset.drive;if(a==='connect')connect();if(a==='disconnect')disconnect();if(a==='sync')sync().catch(e=>status(e.message));});
+ try{capture();}catch(e){options.notify('Sync metadata could not be saved. Export a backup before syncing.');}
  return {capture,panel,sync,disconnect};
 }
 g.DomshopDriveSync={create};

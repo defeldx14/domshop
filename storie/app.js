@@ -292,9 +292,10 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope
 driveSync=DomshopDriveSync.create({
  app:'domshop-storie-v1',clientId:STORIE_CONFIG.webClientId,
  get:()=>state,
+ initialAt:(key,value)=>key.startsWith('progress/')?Math.max(Number(value.lastAt)||0,...(value.answers||[]).filter(Boolean).map(a=>Number(a.at)||0)):key.startsWith('words/')?(Date.parse(value.dateAdded)||0):key.startsWith('mistakes/')?(Number(value.lastAt)||0):key.startsWith('history/')?(Number(value.at)||0):0,
  toItems:s=>{
-  const out={'settings':s.settings};
-  for(const [id,p]of Object.entries(s.progress))out['progress/'+id]=p;
+  const out={};if(JSON.stringify(s.settings)!==JSON.stringify(fresh().settings))out.settings=s.settings;
+  for(const [id,p]of Object.entries(s.progress))if(p.visits||p.done||p.draft||p.follow||p.answers?.some(Boolean)||p.production?.length)out['progress/'+id]=p;
   for(const w of s.words)out['words/'+w.id]=w;
   for(const [tag,m]of Object.entries(s.mistakes))out['mistakes/'+encodeURIComponent(tag)]=m;
   for(const h of s.history)out['history/'+encodeURIComponent(h.id)+'/'+h.at]=h;
