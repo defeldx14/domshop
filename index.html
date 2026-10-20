@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111315"><meta name="color-scheme" content="dark"><meta name="description" content="Domshop apps and games."><meta name="apple-mobile-web-app-title" content="Domshop"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="./assets/icons/icon-180.png"><link rel="stylesheet" href="./style.css?v=4"><title>Domshop</title></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111315"><meta name="color-scheme" content="dark"><meta name="description" content="Domshop apps and games."><meta name="apple-mobile-web-app-title" content="Domshop"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="./assets/icons/icon-180.png"><link rel="stylesheet" href="./style.css?v=4"><link rel="stylesheet" href="./skyline.css?v=1"><title>Domshop</title></head>
 <body><a class="skip" href="#apps">Skip to apps</a><div class="shell">
 <header><h1><a href="./">domshop</a></h1><nav aria-label="Main"><a href="#learn">Learn</a><a href="#play">Games</a></nav></header>
 <main id="apps"><section id="learn" aria-labelledby="learn-title"><h2 id="learn-title">Learn</h2><div class="grid">
@@ -13,4 +13,37 @@
 <a class="card" href="https://jdomd.itch.io/webslingermobile"><div class="card-top"><h3>Webslinger Mobile</h3><span aria-hidden="true">↗</span></div><p>Play WebslingerMobile on itch.io.</p></a>
 </div></section>
 <p id="offline-status" role="status" class="status"></p></main>
-<footer><details><summary>Install</summary><p>iPhone: Safari → Share → Add to Home Screen.<br>Android: browser menu → Install app.<br>The hub works offline after an online visit. Linked apps manage their own offline support.</p></details><a href="https://github.com/defeldx14/domshop">GitHub ↗</a></footer></div><script src="./script.js?v=7" defer></script></body></html>
+<footer><details><summary>Install</summary><p>iPhone: Safari → Share → Add to Home Screen.<br>Android: browser menu → Install app.<br>The hub works offline after an online visit. Linked apps manage their own offline support.</p></details><a href="https://github.com/defeldx14/domshop">GitHub ↗</a></footer><div id="domshop-mini-skyline">
+  <div class="skyline-product" aria-label="Domshop interactive skyline prototype">
+    <div class="skyline-scene">
+      <canvas aria-hidden="true"></canvas>
+      <div class="skyline-hits" role="group" aria-label="Interactive city">
+        <button type="button" class="skyline-hit skyline-cloud" aria-label="Thundercloud: tap to make thunder"></button>
+        <button type="button" class="skyline-hit skyline-plane" aria-label="Airplane: turn into a vintage biplane" hidden></button>
+        <button type="button" class="skyline-hit skyline-train" aria-label="Express train: tap to turn into a steam train" hidden></button>
+        <button type="button" class="skyline-hit skyline-building" data-building="0" aria-label="Brownstone lights" aria-pressed="true"></button>
+        <button type="button" class="skyline-hit skyline-building" data-building="1" aria-label="Apartment lights" aria-pressed="true"></button>
+        <button type="button" class="skyline-hit skyline-building" data-building="2" aria-label="Cinema lights" aria-pressed="true"></button>
+        <button type="button" class="skyline-hit skyline-building" data-building="3" aria-label="Crown tower: choose lighting colors" aria-expanded="false"></button>
+        <button type="button" class="skyline-hit skyline-building" data-building="4" aria-label="Riverside building lights" aria-pressed="true"></button>
+        <button type="button" class="skyline-hit skyline-moon" aria-label="Moon: summon a meteor"></button>
+        <button type="button" class="skyline-hit skyline-time" aria-label="Meteor: change the era" aria-pressed="false" hidden></button>
+      </div>
+    </div>
+    <span class="skyline-status" role="status" aria-live="polite"></span><div class="skyline-audio-row"><button type="button" class="skyline-sound" aria-label="Toggle thunder sound" aria-pressed="true"><span aria-hidden="true">♫</span></button></div>
+    <section class="skyline-picker" aria-label="Crown tower lighting" hidden>
+      <div class="skyline-picker-head"><span></span><button type="button" class="skyline-close" aria-label="Close tower colors"><span aria-hidden="true">×</span></button></div>
+      <div class="skyline-colors" role="group" aria-label="Choose a lighting color">
+        <button type="button" class="cursor-interaction" data-color="#ffffff" aria-label="White"><span style="background:#ffffff"></span></button>
+        <button type="button" class="cursor-interaction" data-color="#ff1744" aria-label="Electric red"><span style="background:#ff1744"></span></button>
+        <button type="button" class="cursor-interaction" data-color="#ffb300" aria-label="Golden amber"><span style="background:#ffb300"></span></button>
+        <button type="button" class="cursor-interaction" data-color="#00ff88" aria-label="Neon green"><span style="background:#00ff88"></span></button>
+        <button type="button" class="cursor-interaction" data-color="#0088ff" aria-label="Electric blue"><span style="background:#0088ff"></span></button>
+        <button type="button" class="cursor-interaction" data-color="#d500ff" aria-label="Electric violet"><span style="background:#d500ff"></span></button>
+      </div>
+      <div class="skyline-picker-foot"><input type="color" value="#fff0c8" aria-label="Custom tower lighting color"><button type="button" class="skyline-tower-power" aria-label="Toggle tower lights" aria-pressed="true"><span aria-hidden="true">⏻</span></button></div>
+    </section>
+  </div>
+</div>
+</div><script src="./script.js?v=7" defer></script><script src="./skyline.js?v=1" defer></script></body></html>
+

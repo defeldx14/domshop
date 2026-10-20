@@ -1,0 +1,52 @@
+
+#domshop-mini-skyline{padding:24px 0 28px}
+#domshop-mini-skyline .skyline-product{--sky-ink:#e1e8f5;--sky-muted:#929eb3;--sky-panel:#111722;--sky-edge:#283143;color-scheme:dark;color:var(--sky-ink);background:#0c1220;border:1px solid var(--sky-edge);border-radius:18px;max-width:460px;margin:auto;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.45;box-shadow:0 18px 60px #00000025}
+#domshop-mini-skyline *{box-sizing:border-box}
+#domshop-mini-skyline .skyline-top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 18px 0;position:relative;z-index:2}
+#domshop-mini-skyline .skyline-brand{font-size:16px;font-weight:500;letter-spacing:-.5px}
+#domshop-mini-skyline .skyline-brand span{font-size:11px;letter-spacing:.6px;color:var(--sky-muted);margin-left:9px}
+#domshop-mini-skyline .skyline-date{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:1px;color:var(--sky-muted)}
+#domshop-mini-skyline .skyline-scene{height:calc(clamp(300px,82vw,380px) + 56px);position:relative;isolation:isolate}
+#domshop-mini-skyline canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+#domshop-mini-skyline .skyline-hits{position:absolute;inset:0}
+#domshop-mini-skyline button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#domshop-mini-skyline .skyline-hit{position:absolute;display:block;border:0;background:transparent;margin:0;padding:0;border-radius:5px;min-width:44px;min-height:44px}
+#domshop-mini-skyline .skyline-hit:focus-visible{outline:2px solid #c9d7ff;outline-offset:2px;background:#c9d7ff0d}
+#domshop-mini-skyline .skyline-cloud{z-index:3}
+#domshop-mini-skyline .skyline-time{z-index:4}
+#domshop-mini-skyline .skyline-moon{z-index:4}
+#domshop-mini-skyline .skyline-time[hidden]{display:none}
+#domshop-mini-skyline .skyline-plane{z-index:5}
+#domshop-mini-skyline .skyline-plane[hidden],#domshop-mini-skyline .skyline-train[hidden]{display:none}
+#domshop-mini-skyline .skyline-train{z-index:5}
+#domshop-mini-skyline .skyline-product{position:relative}
+#domshop-mini-skyline .skyline-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#domshop-mini-skyline .skyline-audio-row{display:flex;justify-content:flex-end;padding:0 10px;background:#111722}
+#domshop-mini-skyline .skyline-sound{position:static;width:44px;height:44px;display:grid;place-items:center}
+#domshop-mini-skyline .skyline-sound[aria-pressed=false]{opacity:.4}
+#domshop-mini-skyline .skyline-band-picker button{display:grid;place-items:center}
+#domshop-mini-skyline .band-mark{width:16px;height:27px;display:block;background:linear-gradient(to bottom,currentColor 0 25%,transparent 25% 33%,currentColor 33% 60%,transparent 60% 68%,currentColor 68%);opacity:.8;clip-path:polygon(35% 0,65% 0,65% 30%,80% 30%,80% 65%,100% 65%,100% 100%,0 100%,0 65%,20% 65%,20% 30%,35% 30%)}
+#domshop-mini-skyline .band-top{background:linear-gradient(to bottom,currentColor 0 30%,transparent 30%)}
+#domshop-mini-skyline .band-middle{background:linear-gradient(to bottom,transparent 0 33%,currentColor 33% 63%,transparent 63%)}
+#domshop-mini-skyline .band-base{background:linear-gradient(to bottom,transparent 0 68%,currentColor 68%)}
+#domshop-mini-skyline .skyline-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px 8px;background:var(--sky-panel);min-height:57px;border-top:1px solid var(--sky-edge)}
+#domshop-mini-skyline .skyline-status{color:#acb8cc;font-size:12px;max-width:260px}
+#domshop-mini-skyline .skyline-sound,#domshop-mini-skyline .skyline-close{background:none;border:0;padding:10px 4px;min-height:44px;white-space:nowrap;color:#b9c7dc;font-size:12px}
+#domshop-mini-skyline .skyline-picker{background:#151d2a;border-top:1px solid var(--sky-edge);padding:8px 15px 16px}
+#domshop-mini-skyline .skyline-picker[hidden]{display:none}
+#domshop-mini-skyline .skyline-picker-head{display:flex;align-items:center;justify-content:space-between;font-weight:500}
+#domshop-mini-skyline .skyline-band-picker{display:flex;gap:6px;margin:2px 0 12px}
+#domshop-mini-skyline .skyline-band-picker button{flex:1;background:#1c2637;border:1px solid #344159;min-height:44px;border-radius:7px;font-size:12px;padding:8px}
+#domshop-mini-skyline .skyline-band-picker button[aria-pressed=true]{background:#d9e2ef;color:#192333;border-color:#d9e2ef}
+#domshop-mini-skyline .skyline-colors{display:flex;flex-wrap:wrap;gap:5px}
+#domshop-mini-skyline .skyline-colors button{background:transparent;border:1px solid transparent;border-radius:8px;width:44px;height:44px;padding:9px;display:grid;place-items:center}
+#domshop-mini-skyline .skyline-colors button[aria-pressed=true]{border-color:#c6d3e8;background:#c6d3e80c}
+#domshop-mini-skyline .skyline-colors span{display:block;width:23px;height:23px;border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff22}
+#domshop-mini-skyline .skyline-picker-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px}
+#domshop-mini-skyline .skyline-picker-foot label{display:flex;align-items:center;gap:10px;font-size:12px;color:#b9c7dc}
+#domshop-mini-skyline input[type=color]{width:44px;height:44px;border:1px solid #344159;padding:5px;border-radius:7px;background:#1c2637}
+#domshop-mini-skyline .skyline-tower-power{min-height:44px;background:#1c2637;border:1px solid #344159;padding:8px 12px;border-radius:7px;font-size:12px}
+@media(prefers-reduced-motion:reduce){#domshop-mini-skyline .skyline-product{scroll-behavior:auto}}
+
+#domshop-mini-skyline section{margin:0}#domshop-mini-skyline button{cursor:pointer}#domshop-mini-skyline .skyline-close{width:44px}#domshop-mini-skyline .skyline-sound span,#domshop-mini-skyline .skyline-close span,#domshop-mini-skyline .skyline-tower-power span{font-size:22px;line-height:1}
+
