@@ -9,7 +9,8 @@ GitHub Pages deploys from **main / (root)**. No build tools or dependencies.
 - Parola: https://defeldx14.github.io/italian-practice/ (currently branded Parole).
 - Flip 7: https://defeldx14.github.io/flip7-scorekeeper/
 - Storie / Italian Story: URL and repository not yet supplied.
-- Atlante Italia: URL and repository not yet supplied.
+- Atlante Italia: https://atlante-italia-dom.airy-bison-8343.chatgpt.site/
+- Rooftop Shadow: https://jdomd.itch.io/rooftop-shadow
 
 Edit cards in index.html when the missing URLs are known. Replace pending articles with anchors only after verifying the destination. Existing app repositories remain separate.
 
