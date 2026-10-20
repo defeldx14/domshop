@@ -13,12 +13,12 @@ const toast=s=>{$('#notice').textContent=s;clearTimeout(toast.timer);toast.timer
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true}catch(e){storageOK=false;toast('Salvataggio non disponibile. Esporta un backup prima di chiudere.');return false}}
 const getP=l=>state.progress[l.id]||(state.progress[l.id]={phase:'scene',index:0,answers:[],visits:0,draft:'',production:[],done:false,follow:''});
 let category='Tutte',current=null,sceneIndex=0,phase='scene',questionIndex=0,transcript=true,english=false,order=[],orderPool=[],wordContext=null,busy=false;
-let utterances=[];
+let utterances=[],lastSelection='';
 function stopAudio(){if('speechSynthesis'in window)speechSynthesis.cancel();utterances=[]}
 function route(id,part='scene',i=0){location.hash=`lesson/${encodeURIComponent(id)}/${part}/${i}`}
 function go(view){location.hash=view}
 function syncRoute(){
- stopAudio();dialog.close();order=[];orderPool=[];english=false;transcript=!state.settings.listenFirst;
+ stopAudio();lastSelection='';dialog.close();order=[];orderPool=[];english=false;transcript=!state.settings.listenFirst;
  const parts=location.hash.slice(1).split('/');
  if(parts[0]==='lesson'){
   const l=lessons.find(l=>l.id===decodeURIComponent(parts[1]||''));
@@ -92,7 +92,7 @@ function openWord(word,sentence,known=true,entry=null){
  dialog.showModal();
 }
 function inspectSelection(){
- const selected=String(window.getSelection()).trim();
+ const selected=String(window.getSelection()).trim()||lastSelection;
  if(!selected||selected.length>100){toast('Seleziona da 1 a 100 caratteri nel testo italiano.');return}
  const s=current.scenes[sceneIndex];
  if(!s.it.includes(selected)){toast('Seleziona una frase nel testo italiano della scena.');return}
@@ -280,6 +280,8 @@ document.addEventListener('keydown',e=>{
  if(e.target.closest('input,textarea,select,button,a,summary,[contenteditable="true"]')||dialog.open)return;
  const next=$('.dock .primary');if(next&&!next.disabled){e.preventDefault();next.click()}
 });
+document.addEventListener('selectionchange',()=>{const text=String(window.getSelection()).trim();if(current&&phase==='scene'&&text&&text.length<=100&&current.scenes[sceneIndex].it.includes(text))lastSelection=text});
+document.addEventListener('focusin',e=>{if(e.target.matches('textarea,input[type="text"]'))setTimeout(()=>e.target.scrollIntoView({block:'center',behavior:'smooth'}),250)});
 window.addEventListener('hashchange',syncRoute);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAudio()});
 window.addEventListener('pagehide',stopAudio);
