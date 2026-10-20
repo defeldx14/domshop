@@ -62,7 +62,7 @@ function create(options){
   let last='';try{last=localStorage.getItem(key+'.last')||''}catch{}
   return '<div class="box"><h2>Google Drive sync</h2><p>Sync progress between devices using the same Google account. Local saves still work offline.</p><label><input type="checkbox" id="drive-consent"> I will use my intended Google account and merge this device’s progress.</label><div class="row"><button type="button" data-drive="connect">Connect Google Drive</button><button type="button" data-drive="sync">Sync now</button><button type="button" data-drive="disconnect">Disconnect</button></div><p id="drive-status" role="status">'+(token?'Connected.':'Not connected.')+'</p><small>'+(last?'Last sync: '+new Date(last).toLocaleString()+'. ':'')+'Private app data only. Connect again after reopening or when authorization expires. If the same lesson changes on two devices, the latest edit wins. Keep backups for older attempts.</small></div>';
  }
- document.addEventListener('click',e=>{const a=e.target.closest('[data-drive]')?.dataset.drive;if(a==='connect')connect();if(a==='disconnect')disconnect();if(a==='sync')sync().catch(()=>{});});
+ document.addEventListener('click',e=>{const a=e.target.closest('[data-drive]')?.dataset.drive;if(a==='connect')connect();if(a==='disconnect')disconnect();if(a==='sync')sync().catch(e=>status(e.message));});
  return {capture,panel,sync,disconnect};
 }
 g.DomshopDriveSync={create};
