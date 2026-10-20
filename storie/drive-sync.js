@@ -5,7 +5,7 @@ function create(options){
  const C=g.DomshopSyncCore,key='domshop.sync.'+options.app;
  let token='',expires=0,running=false,client=null,remote=null;
  let doc=C.empty(options.app),initialized=false;
- try{const cached=localStorage.getItem(key);if(cached)doc=C.valid(JSON.parse(cached),options.app)}catch{options.notify('Sync metadata could not be read. Export a backup before syncing.');}
+ try{const cached=localStorage.getItem(key);if(cached){doc=C.valid(JSON.parse(cached),options.app);initialized=true;}}catch{options.notify('Sync metadata could not be read. Export a backup before syncing.');}
  function status(text){const el=document.getElementById('drive-status');if(el)el.textContent=text;options.notify(text);}
  function persist(){localStorage.setItem(key,JSON.stringify(doc));}
  function capture(){doc=C.capture(doc,options.toItems(options.get()),()=>crypto.randomUUID());if(!initialized&&options.initialAt){for(const [k,r]of Object.entries(doc.records))r.at=options.initialAt(k,r.value);}initialized=true;persist();return doc;}
