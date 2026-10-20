@@ -6,7 +6,7 @@ A mobile-first personal app hub: https://defeldx14.github.io/domshop/
 GitHub Pages deploys from **main / (root)**. No build tools or dependencies.
 
 ## App links
-- Parola and Italian Practice: https://defeldx14.github.io/italian-practice/ (currently branded Parole).
+- Parola: https://defeldx14.github.io/italian-practice/ (currently branded Parole).
 - Flip 7: https://defeldx14.github.io/flip7-scorekeeper/
 - Storie / Italian Story: URL and repository not yet supplied.
 - Atlante Italia: URL and repository not yet supplied.
