@@ -23,7 +23,7 @@ globalThis.storieArt=function(lesson,index=0,card=false){
  caption='Schema illustrativo · '+s.title;
  }else if(lesson.theme==='plans'){
  if(a==='phone')content=A(125,133)+B(475,133)+phone(224,74,'Alle otto?');
- if(a==='desk')content=A(147,132)+table+rect(220,135,115,74,'#455558')+rect(226,141,103,61,'#bdd0c3')+rect(345,173,63,35,'#eee9da');
+ if(a==='desk')content=B(147,132)+table+rect(220,135,115,74,'#455558')+rect(226,141,103,61,'#bdd0c3')+rect(345,173,63,35,'#eee9da');
  if(a==='door')content=door(70)+A(279,130,true)+B(449,130)+rect(399,190,82,22,'#c3a274')+txt(407,205,'PIZZA',11);
  if(a==='dinner')content=A(120,130)+B(480,130)+table+`<ellipse cx="300" cy="203" rx="60" ry="15" fill="#d5a361"/><ellipse cx="300" cy="200" rx="49" ry="10" fill="#ae684d"/>`;
  }else if(lesson.theme==='repair'){
