@@ -2,13 +2,13 @@
   "id": "./",
   "name": "Domshop",
   "short_name": "Domshop",
-  "description": "Things to learn. Tools to use. Games to play.",
+  "description": "Domshop apps and games.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f2ea",
-  "theme_color": "#f4f2ea",
+  "background_color": "#111315",
+  "theme_color": "#111315",
   "icons": [
     {
       "src": "assets/icons/icon-192.png",
