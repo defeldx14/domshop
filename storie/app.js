@@ -7,10 +7,10 @@ const KEY='domshop.storie.v1';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s).normalize('NFC').toLocaleLowerCase('it').replace(/[’‘]/g,"'").trim().replace(/[.!?]+$/g,'').replace(/\s+/g,' ');
 const fresh=()=>({version:1,settings:{reading:'Tutti',production:'A2',speed:.9,listenFirst:false},progress:{},words:[],mistakes:{},history:[]});
-let state=fresh(),storageOK=true;
+let state=fresh(),storageOK=true,driveSync=null;
 try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.version===1)state={...fresh(),...x,settings:{...fresh().settings,...x.settings}};}catch(e){storageOK=false;}
 const toast=s=>{$('#notice').textContent=s;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#notice').textContent='',5000)};
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true}catch(e){storageOK=false;toast('Salvataggio non disponibile. Esporta un backup prima di chiudere.');return false}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));if(driveSync)driveSync.capture();return true}catch(e){storageOK=false;toast('Salvataggio non disponibile. Esporta un backup prima di chiudere.');return false}}
 const getP=l=>state.progress[l.id]||(state.progress[l.id]={phase:'scene',index:0,answers:[],visits:0,draft:'',production:[],done:false,follow:''});
 let category='Tutte',current=null,sceneIndex=0,phase='scene',questionIndex=0,transcript=true,english=false,order=[],orderPool=[],wordContext=null,busy=false;
 let utterances=[],lastSelection='';
@@ -171,7 +171,7 @@ function progressView(){
  app.innerHTML=`<div class="eyebrow">Dati di questo dispositivo</div><h1>I tuoi progressi.</h1><div class="stats"><div><strong>${p.filter(x=>x.done).length}/${lessons.length}</strong><small>lezioni</small></div><div><strong>${answered.filter(x=>x.correct).length}/${answered.length}</strong><small>risposte corrette</small></div><div><strong>${p.reduce((n,x)=>n+(x.production?.length||0),0)}</strong><small>testi salvati</small></div></div><div class="split"><div><h2>Da rivedere</h2>${weak.map(([tag,m])=>`<div class="box"><strong>[${esc(tag)}] · ${m.count}</strong><p>${esc(m.example)}</p><button data-a="clearweak" data-tag="${esc(tag)}">Segna come ripassato</button></div>`).join('')||'<p class="muted">Nessun errore registrato.</p>'}</div><div><h2>Consigliate dai tuoi risultati</h2>${recommend().slice(0,3).map(l=>`<div class="box"><h3>${esc(l.title)}</h3><p class="meta">Categoria meno recente, lezione incompleta o strutture da ripassare.</p><button data-a="start" data-id="${l.id}">Apri</button></div>`).join('')}<details><summary>Come sono usati i risultati</summary><p class="muted">I quiz registrano gli errori e favoriscono lezioni con strutture simili. Le categorie recenti pesano meno. La difficoltà si seleziona separatamente per lettura e produzione; i testi non vengono riscritti automaticamente. I testi locali non valutati non aumentano un livello stimato.</p></details></div></div>`;
 }
 function settingsView(){
- app.innerHTML=`<div class="eyebrow">Impostazioni</div><h1>Il supporto che ti serve.</h1><div class="split"><div class="box"><h2>Livelli separati</h2><label>Lettura<select data-setting="reading">${['Tutti','A2','B1','B2'].map(x=>`<option ${state.settings.reading===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Produzione<select data-setting="production">${['A2','B1','B2'].map(x=>`<option ${state.settings.production===x?'selected':''}>${x}</option>`).join('')}</select></label><label><input type="checkbox" data-setting="listenFirst" ${state.settings.listenFirst?'checked':''}> Nascondi il testo prima dell’ascolto</label><p class="muted">Lettura filtra le lezioni disponibili. Produzione cambia la lunghezza richiesta e il livello inviato al server.</p></div><div class="box"><h2>Salvataggio e trasferimento</h2><p>Solo su questo browser e dispositivo. Nessuna sincronizzazione automatica tra computer e iPhone.</p><p class="muted">${storageOK?'Salvataggio locale attivo.':'Salvataggio locale non disponibile: esporta i dati.'} iOS può cancellare i dati del sito. Conserva un backup.</p><button data-a="exportbackup">Esporta backup completo</button><button data-a="exportparola">Esporta parole per Parola</button><label class="file">Importa backup Storie o Italian Hover / Parola v1<input id="import" type="file" accept=".json,application/json"></label><small>Importazione: unisce le parole; mantiene il tentativo di lezione più recente. Il formato Parola conserva parole e contesto, non trasferisce i quiz di Storie.</small></div><div class="box"><h2>Conversazione e correzione</h2><p>${endpoint()?'Server configurato: risposte e contesto della lezione saranno inviati al servizio quando premi Invia e correggi.':'Modalità locale: risposte libere salvate, pochi controlli mirati e modelli di confronto. Nessun dialogo AI libero.'}</p><p class="muted">Il sito statico non ha un backend. Per attivare le risposte dinamiche serve un endpoint HTTPS sullo stesso dominio, configurato in config.js. Le chiavi restano sul server. Dettagli nel README dell’app.</p></div><div class="box"><h2>Offline e iPhone</h2><p>Apri l’app online una volta. Le lezioni incluse funzionano offline dopo il caricamento della cache. L’audio dipende dalle voci italiane del dispositivo e può richiedere internet.</p><p class="muted">Safari → Condividi → Aggiungi alla schermata Home. Nessun microfono richiesto. Notizie: raccolta verificata al 20 ottobre 2026, senza feed automatico.</p></div></div>`;
+ app.innerHTML=`<div class="eyebrow">Impostazioni</div><h1>Il supporto che ti serve.</h1><div class="split">${driveSync?driveSync.panel():''}<div class="box"><h2>Livelli separati</h2><label>Lettura<select data-setting="reading">${['Tutti','A2','B1','B2'].map(x=>`<option ${state.settings.reading===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Produzione<select data-setting="production">${['A2','B1','B2'].map(x=>`<option ${state.settings.production===x?'selected':''}>${x}</option>`).join('')}</select></label><label><input type="checkbox" data-setting="listenFirst" ${state.settings.listenFirst?'checked':''}> Nascondi il testo prima dell’ascolto</label><p class="muted">Lettura filtra le lezioni disponibili. Produzione cambia la lunghezza richiesta e il livello inviato al server.</p></div><div class="box"><h2>Salvataggio e trasferimento</h2><p>Salvataggio locale su questo dispositivo. Usa Google Drive sync per trasferire i progressi tra dispositivi.</p><p class="muted">${storageOK?'Salvataggio locale attivo.':'Salvataggio locale non disponibile: esporta i dati.'} iOS può cancellare i dati del sito. Conserva un backup.</p><button data-a="exportbackup">Esporta backup completo</button><button data-a="exportparola">Esporta parole per Parola</button><label class="file">Importa backup Storie o Italian Hover / Parola v1<input id="import" type="file" accept=".json,application/json"></label><small>Importazione: unisce le parole; mantiene il tentativo di lezione più recente. Il formato Parola conserva parole e contesto, non trasferisce i quiz di Storie.</small></div><div class="box"><h2>Conversazione e correzione</h2><p>${endpoint()?'Server configurato: risposte e contesto della lezione saranno inviati al servizio quando premi Invia e correggi.':'Modalità locale: risposte libere salvate, pochi controlli mirati e modelli di confronto. Nessun dialogo AI libero.'}</p><p class="muted">Il sito statico non ha un backend. Per attivare le risposte dinamiche serve un endpoint HTTPS sullo stesso dominio, configurato in config.js. Le chiavi restano sul server. Dettagli nel README dell’app.</p></div><div class="box"><h2>Offline e iPhone</h2><p>Apri l’app online una volta. Le lezioni incluse funzionano offline dopo il caricamento della cache. L’audio dipende dalle voci italiane del dispositivo e può richiedere internet.</p><p class="muted">Safari → Condividi → Aggiungi alla schermata Home. Nessun microfono richiesto. Notizie: raccolta verificata al 20 ottobre 2026, senza feed automatico.</p></div></div>`;
 }
 function download(name,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 async function hash(word,sentence){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([word.normalize('NFC'),sentence.normalize('NFC')])));return 'v_'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -185,7 +185,7 @@ function validateWord(w){
  for(const key of ['grammar','note','lessonId','lessonTitle','sentenceTranslation','sourceUrl'])if(w[key]!==undefined&&!str(w[key]))throw Error('Contesto non valido.');
  return {id:w.id,term:w.term,meaning:w.meaning,sentence:w.sentence,dateAdded:w.dateAdded,grammar:w.grammar||'',note:w.note||'',lessonId:w.lessonId||'',lessonTitle:w.lessonTitle||'',sentenceTranslation:w.sentenceTranslation||'',sourceUrl:w.sourceUrl||'',review:{count:Math.max(0,Number(w.review?.count)||0),due:Math.max(0,Number(w.review?.due)||0)}};
 }
-async function importData(file){
+async function importData(file,validateOnly=false){
  if(!file)return;if(file.size>10000000)throw Error('Backup troppo grande: massimo 10 MB.');
  const x=JSON.parse(await file.text());let words=[],progress={},mistakes={},importSettings=null,importHistory=[];
  if(x.format==='domshop-storie'&&x.version===1&&x.state?.version===1){
@@ -213,6 +213,7 @@ async function importData(file){
    words.push(validateWord({id,term:v.word,meaning:v.translation||'',sentence:v.sentence,dateAdded:v.dateAdded,lessonTitle:v.sourceTitle||'Parola',sourceUrl:v.sourceUrl||'',sentenceTranslation:v.sentenceTranslation||''}));
   }
  }else throw Error('Formato non supportato. Usa un backup Storie o Italian Hover / Parola v1.');
+ if(validateOnly)return {version:1,settings:importSettings||fresh().settings,progress,words,mistakes,history:importHistory};
  let added=0;for(const w of words)if(!state.words.some(e=>norm(e.term)===norm(w.term)&&e.sentence===w.sentence)){state.words.push(w);added++}
  for(const [id,p]of Object.entries(progress))if(!state.progress[id]||(p.lastAt||0)>(state.progress[id].lastAt||0))state.progress[id]=p;
  for(const [tag,m]of Object.entries(mistakes))if(!state.mistakes[tag]||m.lastAt>state.mistakes[tag].lastAt)state.mistakes[tag]=m;
@@ -286,5 +287,35 @@ window.addEventListener('hashchange',syncRoute);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAudio()});
 window.addEventListener('pagehide',stopAudio);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>toast('Cache offline non disponibile. Le lezioni online restano utilizzabili.'));
+
+// Private Drive journal, separate from Parola's vocabulary journal.
+driveSync=DomshopDriveSync.create({
+ app:'domshop-storie-v1',clientId:STORIE_CONFIG.webClientId,
+ get:()=>state,
+ toItems:s=>{
+  const out={'settings':s.settings};
+  for(const [id,p]of Object.entries(s.progress))out['progress/'+id]=p;
+  for(const w of s.words)out['words/'+w.id]=w;
+  for(const [tag,m]of Object.entries(s.mistakes))out['mistakes/'+encodeURIComponent(tag)]=m;
+  for(const h of s.history)out['history/'+encodeURIComponent(h.id)+'/'+h.at]=h;
+  return out;
+ },
+ fromItems:items=>{
+  const s=fresh();
+  for(const [key,value]of Object.entries(items)){
+   if(key==='settings')s.settings=value;
+   else if(key.startsWith('progress/'))s.progress[key.slice(9)]=value;
+   else if(key.startsWith('words/'))s.words.push(value);
+   else if(key.startsWith('mistakes/')){const tag=decodeURIComponent(key.slice(9));if(!['__proto__','constructor','prototype'].includes(tag))s.mistakes[tag]=value;}
+   else if(key.startsWith('history/'))s.history.push(value);
+  }
+  s.history.sort((a,b)=>a.at-b.at);s.history=s.history.slice(-100);return s;
+ },
+ validate:s=>importData(new Blob([JSON.stringify({format:'domshop-storie',version:1,state:s})]),true),
+ set:s=>{state=s;localStorage.setItem(KEY,JSON.stringify(state));},
+ refresh:()=>{if(!current)syncRoute();},
+ notify:toast
+});
+
 syncRoute();
 })();
