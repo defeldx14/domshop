@@ -12,3 +12,6 @@ self.addEventListener('fetch',e=>{
   e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();e.waitUntil(caches.open(CACHE).then(c=>c.put('./index.html',copy)))}return r}).catch(()=>caches.match('./index.html')));
  }else if(!['storie/','reader/'].some(app=>u.pathname.startsWith(base+app)))e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request)));
 });
+
+
+
