@@ -1,0 +1,21 @@
+{
+  "name": "reader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "parola-config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "preview": "node tests/server.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@playwright/test": "^1.64.1",
+    "fflate": "^0.8.3"
+  }
+}
