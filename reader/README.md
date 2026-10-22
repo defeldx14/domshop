@@ -8,7 +8,7 @@ Open an unprotected EPUB with **Open EPUB**. Books are stored in IndexedDB on th
 
 Tap a word or select a phrase and choose **Look up selection**. Italian pronunciation uses the device's Italian speech voice. Translation uses the same public Google endpoint as Parola, with a persistent local cache, timeout, retry and editable fallback. It requires network access for uncached text and can be rate-limited. Only the selected text or its sentence is sent for translation. Wiktionary provides POS and lemma/infinitive information when available; gender is shown only if returned in its definitions. The dictionary link remains available when the endpoint has no result. No grammar information is guessed.
 
-**Reveal sentence translation** keeps English hidden until requested. **Save to Parola** also fills the English sentence where the translation service is available; on service failure the word and Italian context still save. The entry is editable in Parola. **Copy import row** and **Export saved words** use:
+**Reveal sentence translation** keeps English hidden until requested. **Save to Parola** commits the word and Italian sentence immediately, then fills missing English translations in the background. A slow translation service cannot block the local save. Confirmation identifies the local or Google collection, and save errors appear inside the lookup dialog. The entry is editable in Parola. **Copy import row** and **Export saved words** use:
 
 ```text
 Italian | English | Italian sentence | English sentence
@@ -25,6 +25,8 @@ GitHub Pages serves Domshop and Parola under the same `https://defeldx14.github.
 In **Aa → Google account**, connect the same Google account used by Parola. The public OAuth client ID and `italian-hover-v1` Drive journal are reused. Accounts have separate local profiles; guest words are not silently imported into a Google profile. Google's existing reconnect behavior applies. Reading positions and marks have their own mergeable `domshop-reader-v1` Drive journal and account-specific local state. EPUB files and reading preferences remain device-local. Import the exact same EPUB on the other device to match its content hash and recover its position and marks. Reading state also has JSON backup/merge controls.
 
 On a different origin (including localhost), the browser has separate storage. Use the production Pages origin for immediate sharing with the existing Parola installation. iOS standalone apps and Safari can have separate storage containers; connecting the same Google account and syncing provides the bridge between those containers.
+
+The Chrome extension also has its own `chrome-extension://` storage. Website saves appear in the extension after connecting both to the same Google account and syncing; a website cannot write directly into an extension's IndexedDB. In the extension's Sync settings, connect Google Drive and use Sync. The reader now follows Parola account changes made in another website tab. **Aa → Saved from this reader** lists the active collection's entries. If reader entries were previously saved as a guest and are missing from the selected account, **Earlier reader saves** previews those words and offers an explicit merge into that account. Original local entries are preserved, and duplicates/tombstones are respected.
 
 The Google client already authorizes the production Pages origin. Local OAuth requires adding the local origin to Google's authorized JavaScript origins; no API secret belongs in this repository.
 

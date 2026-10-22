@@ -160,7 +160,13 @@ function create(o){
  window.addEventListener('focus',()=>schedule(0));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule(0);});
  setInterval(()=>{if(!document.hidden){if(token&&Date.now()>=expires){token='';status('Reconnect Google · changes remain saved offline.');}else schedule(0);}},60000);
- return {ready,capture,panel,sync,connect,disconnect,importPrevious};
+ async function refreshProfile(){
+  await ready;if(running||signing)return;
+  let selected=read(base+'.selected',null);
+  if(selected&&(!/^[A-Za-z0-9_-]{1,128}$/.test(selected.sub||'')||typeof selected.email!=='string'))selected=null;
+  if((selected?.sub||'guest')!==profile())await loadProfile(selected);
+ }
+ return {ready,capture,panel,sync,connect,disconnect,importPrevious,refreshProfile};
 }
 g.DomshopDriveSync={create};
 })(globalThis);
