@@ -49,6 +49,7 @@ async function importFile(file){
  try{const parsed=await E.parse(await file.arrayBuffer());await booksDB('readwrite',s=>s.put(parsed));await listBooks();await openBook(parsed.id);navigator.storage?.persist?.().catch(()=>{});notify('Book opened.');}finally{$('epubInput').disabled=false;$('epubInput').value='';label.removeAttribute('aria-busy');}
 }
 $('epubInput').onchange=e=>importFile(e.target.files[0]).catch(error);
+$('epubInput').disabled=false;
 async function openBook(id,target){
  if(book)savePosition();const b=library.find(b=>b.id===id)||await booksDB('readonly',s=>s.get(id));
  if(!b){notify('Open this EPUB on this device first.');location.hash='';return;}
@@ -94,6 +95,22 @@ function settings(){const body=showPanel('Reading settings'),group=node('div',un
  const links=node('div',undefined,body,'row box');const parola=node('a','Open Parola ↗',links,'btn');parola.href='https://defeldx14.github.io/italian-practice/#library';parola.target='_blank';parola.rel='noopener';button('Export saved words',links,exportWords);button('Reading backup',links,()=>download('lettore-history.json',JSON.stringify(readerState,null,2),'application/json'));
  const label=node('label','Restore reading backup ',body,'field'),input=node('input',undefined,label);input.type='file';input.accept='.json';input.onchange=async()=>{try{const f=input.files[0];if(!f||f.size>5000000)throw Error('Choose a reading backup under 5 MB.');const incoming=SC.valid(JSON.parse(await f.text()),'domshop-reader-v1');readerState=SC.merge(readerState,incoming);localStorage.setItem(stateKey(),JSON.stringify(readerState));renderLibrary();if(book)renderChapter();notify('Reading history merged.');}catch(e){error(e);}finally{input.value='';}};
  const sync=node('div',undefined,body);sync.id='accountPanel';if(driveSync)sync.innerHTML=driveSync.panel();node('p','Books stay on this device. Google sync keeps Parola entries, reading positions and marks across devices. Open the same EPUB on each device.',body,'muted box');
+ savedReaderWords(body).catch(error);
+}
+async function savedReaderWords(parent){
+ const owner=store,section=node('section',undefined,parent,'box');node('h2','Saved from this reader',section);
+ const isReader=r=>!r.deleted&&r.entry.sourceUrl.includes('/domshop/reader/');
+ const current=C.project(await owner.read()).filter(isReader);if(owner!==store){section.remove();return;}
+ node('p',current.length+' entries in '+(profile==='guest'?'this browser’s local Parola collection':'the selected Google profile')+'.',section);
+ for(const r of current){node('p',r.entry.word+(r.entry.translation?' — '+r.entry.translation:''),section);}
+ if(profile==='guest')return;
+ const localDoc=await guest.read(),known=new Set(C.project(await owner.read()).map(r=>C.key(r.entry.word,r.entry.sentence))),missing=C.project(localDoc).filter(r=>isReader(r)&&!known.has(C.key(r.entry.word,r.entry.sentence)));
+ if(!missing.length)return;const recovery=node('div',undefined,section,'box');node('h2','Earlier reader saves',recovery);node('p',missing.map(r=>r.entry.word).join(', '),recovery);
+ const selected=JSON.parse(localStorage.getItem('domshop.google.domshop-parola-v1.selected')||'null');
+ button('Add '+missing.length+' local saves to '+(selected?.email||'this account'),recovery,async()=>{
+  if(owner!==store)throw Error('Account changed. Open settings again.');const ids=new Set(missing.map(r=>r.id));
+  await owner.importDoc({...C.empty(),events:localDoc.events.filter(e=>ids.has(e.recordId))});doc=await owner.read();driveSync.capture();recovery.replaceChildren();node('p','Earlier saves added to this Parola account. Reconnect Google above to sync the extension.',recovery);
+ });
 }
 function changePref(key,value){const pos=visiblePosition();prefs[key]=value;localStorage.setItem('domshop.reader.prefs',JSON.stringify(prefs));applyPrefs();if(pos){const el=$('reader').children[pos.block];if(el)window.scrollTo(0,scrollY+el.getBoundingClientRect().top-document.querySelector('header').offsetHeight-10+pos.fraction*el.offsetHeight);}}
 $('settingsButton').onclick=settings;
@@ -122,6 +139,7 @@ async function grammar(word){
 }
 function speech(text){if(!('speechSynthesis'in window)){notify('Pronunciation is unavailable in this browser.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='it-IT';u.rate=.85;const voice=speechSynthesis.getVoices().find(v=>v.lang.startsWith('it'));if(voice)u.voice=voice;speechSynthesis.speak(u);}
 async function lookup(pick){
+ await driveSync?.refreshProfile();
  if(!book||pick.text.length>100){notify('Select a word or phrase up to 100 characters.');return;}
  const block=book.chapters[chapter].blocks[pick.block];if(!block?.text)return;
  const s=E.sentence(block.text,pick.start);let sentence=s.text,start=s.start;
@@ -132,24 +150,37 @@ async function lookup(pick){
  $('lookupTitle').textContent=pick.text;const body=$('lookupBody');body.replaceChildren();const row=node('div',undefined,body,'row');button('♫ Listen',row,()=>speech(pick.text));button('Listen to sentence',row,()=>speech(sentence));
  const meta=node('div','',body,'grammar');const dictionary=node('a','Wiktionary ↗',body,'textLink');dictionary.href='https://en.wiktionary.org/wiki/'+encodeURIComponent(pick.text.toLocaleLowerCase('it'))+'#Italian';dictionary.target='_blank';dictionary.rel='noopener';
  const l=node('label',undefined,body,'field');node('span','ENGLISH',l);const meaning=node('input',undefined,l);meaning.setAttribute('aria-label','English meaning');meaning.placeholder='Looking up…';
- const status=node('p','',body,'muted');let meaningEdited=false;meaning.oninput=()=>{meaningEdited=true;entry.translation=meaning.value;};
+ const status=node('p','',body,'muted');let meaningEdited=false,savedId=null;meaning.oninput=()=>{meaningEdited=true;entry.translation=meaning.value;};
  const retry=button('Retry lookup',body,loadTranslation);retry.hidden=true;
  node('p',sentence,body,'context');const english=node('p','',body,'muted');
  const sentenceButton=button('Reveal sentence translation',body,async()=>{sentenceButton.disabled=true;english.textContent='Translating…';try{const result=await translate(sentence);if(epoch!==lookupEpoch)return;entry.sentenceTranslation=result;english.textContent=result;sentenceButton.hidden=true;}catch(e){if(epoch===lookupEpoch){english.textContent=e.name==='AbortError'?'Translation timed out. Retry.':e.message;sentenceButton.disabled=false;}}});
  const editLabel=node('label',undefined,body,'field'),editEnglish=node('textarea',undefined,editLabel);editLabel.hidden=true;node('span','SENTENCE IN ENGLISH',editLabel);editEnglish.setAttribute('aria-label','English sentence');editEnglish.oninput=()=>entry.sentenceTranslation=editEnglish.value;
  button('Edit sentence translation',body,()=>{editLabel.hidden=false;editEnglish.value=entry.sentenceTranslation;editEnglish.focus();});
  const actions=node('div',undefined,body,'row lookupActions');
+ const saveStatus=node('p','',body,'saveStatus');saveStatus.setAttribute('role','status');saveStatus.setAttribute('aria-live','polite');
+ async function refreshSaved(){if(targetStore===store){doc=await targetStore.read();driveSync?.capture();}}
+ async function fillSaved(field,text){if(!savedId||!text)return;await targetStore.fillTranslation(savedId,entry.word,entry.sentence,field,text);await refreshSaved();}
+ async function completeTranslation(field,text){
+  try{const result=await translate(text);await fillSaved(field,result);if(epoch===lookupEpoch){entry[field]=result;if(field==='translation'&&!meaningEdited)meaning.value=result;}}
+  catch{if(epoch===lookupEpoch)saveStatus.textContent+=' Translation is unavailable; your word is saved and can be edited in Parola.';}
+ }
  const save=button('Save to Parola',actions,async()=>{
-  save.disabled=true;const owner=targetStore;
-  try{if(owner!==store)throw Error('Account changed. Select the word again.');entry.translation=meaning.value.trim();if(!entry.translation){meaning.focus();throw Error('Enter an English meaning first.');}
-   if(!entry.sentenceTranslation){try{const result=await translate(sentence);entry.sentenceTranslation=result;if(epoch===lookupEpoch)english.textContent=result;}catch{notify('Saved word with Italian context; English sentence can be added later.');}}
-   if(owner!==store)throw Error('Account changed. Select the word again.');const result=await owner.capture(entry);if(epoch===lookupEpoch){save.textContent=result.status;save.disabled=true;}doc=await store.read();driveSync?.capture();notify(result.status+' · Parola');
-  }catch(e){if(epoch===lookupEpoch)save.disabled=false;throw e;}
+  save.disabled=true;save.textContent='Saving…';saveStatus.textContent='';const owner=targetStore;
+  try{await driveSync?.refreshProfile();if(owner!==store)throw Error('Parola account changed in another tab. Select the word again to save to that account.');entry.translation=meaning.value.trim();
+   const result=await owner.capture(entry);const record=C.project(await owner.read()).find(r=>r.id===result.id);
+   if(!record||record.deleted){if(epoch===lookupEpoch){save.textContent='Save to Parola';save.disabled=false;saveStatus.textContent=result.status+'. Open Parola to restore this entry.';}return;}
+   savedId=result.id;
+   if(epoch===lookupEpoch){save.textContent=result.status;const selected=JSON.parse(localStorage.getItem('domshop.google.domshop-parola-v1.selected')||'null');saveStatus.textContent=profile==='guest'?'Saved in Parola on this browser. Connect Google in Aa to sync other devices.':'Saved in Parola for '+(selected?.email||'your Google account')+'. Google sync may require reconnecting in Aa.';}
+   await refreshSaved();
+   if(!record.entry.translation)completeTranslation('translation',pick.text);
+   if(!record.entry.sentenceTranslation)completeTranslation('sentenceTranslation',sentence);
+  }catch(e){if(epoch===lookupEpoch){save.disabled=false;save.textContent='Save to Parola';saveStatus.textContent='Not saved: '+(e.message||String(e));}}
  },'primary');
+ const parolaLink=node('a','Open Parola ↗',actions,'btn');parolaLink.href='https://defeldx14.github.io/italian-practice/#library';parolaLink.target='_blank';parolaLink.rel='noopener';
  button('Highlight',actions,()=>{updateState('mark/'+crypto.randomUUID(),{book:context.book,chapter:context.chapter,block:pick.block,start:pick.start,end:pick.end,kind:'highlight',text:pick.text,at:new Date().toISOString()});renderChapter();notify('Highlight saved.');});
  button('Copy import row',actions,async()=>{const safe=s=>s.replace(/\|/g,'¦').replace(/[\r\n]+/g,' ');await navigator.clipboard.writeText([entry.word,meaning.value,entry.sentence,entry.sentenceTranslation].map(safe).join(' | '));notify('Parola import row copied.');});
  getSelection()?.removeAllRanges();selectionButton.hidden=true;if(!$('lookup').open)$('lookup').showModal();
- async function loadTranslation(){retry.hidden=true;status.textContent='';try{const t=await translate(pick.text);if(epoch!==lookupEpoch)return;if(!meaningEdited){meaning.value=t;entry.translation=t;}meaning.placeholder='English meaning';}catch(e){if(epoch===lookupEpoch){status.textContent=e.name==='AbortError'?'Lookup timed out. Retry or enter a meaning.':e.message;meaning.placeholder='Enter English meaning';retry.hidden=false;}}}
+ async function loadTranslation(){retry.hidden=true;status.textContent='';try{const t=await translate(pick.text);if(!meaningEdited){if(epoch===lookupEpoch)meaning.value=t;entry.translation=t;await fillSaved('translation',t);}if(epoch===lookupEpoch)meaning.placeholder='English meaning';}catch(e){if(epoch===lookupEpoch){status.textContent=e.name==='AbortError'?'Lookup timed out. Retry or enter a meaning.':e.message;meaning.placeholder='Enter English meaning';retry.hidden=false;}}}
  loadTranslation();grammar(pick.text).then(t=>{if(epoch===lookupEpoch)meta.textContent=t;});
 }
 async function syncReading(token,accountId){
@@ -174,8 +205,8 @@ driveSync=DomshopDriveSync.create({
 });
 await driveSync.ready;
 window.addEventListener('domshop-parola-change',async e=>{const owner=store;if(e.detail?.database!==owner.database)return;try{const fresh=await owner.read();if(owner!==store)return;doc=fresh;driveSync.capture();}catch(e){error(e);}});
-window.addEventListener('focus',async()=>{try{doc=await store.read();driveSync.capture();}catch(e){error(e);}});
-window.addEventListener('storage',e=>{if(e.key===stateKey()){loadState();renderLibrary();if(book)renderChapter();}});
+window.addEventListener('focus',async()=>{try{await driveSync.refreshProfile();doc=await store.read();driveSync.capture();}catch(e){error(e);}});
+window.addEventListener('storage',e=>{if(e.key==='domshop.google.domshop-parola-v1.selected'){driveSync.refreshProfile().catch(error);}if(e.key===stateKey()){loadState();renderLibrary();if(book)renderChapter();}});
 async function route(){if(!location.hash.startsWith('#book=')){if(book)savePosition();$('library').hidden=false;$('reading').hidden=true;$('dock').hidden=true;document.title='Lettore · Domshop';renderLibrary();return;}const p=new URLSearchParams(location.hash.slice(1)),id=p.get('book');if(book?.id===id){navigate(Number(p.get('chapter'))||0);return;}const pos=values()['position/'+id];const chapterParam=p.has('chapter')?Number(p.get('chapter')):undefined;await openBook(id,chapterParam===undefined?undefined:{...(pos?.chapter===chapterParam?pos:{}),chapter:chapterParam});}
 window.addEventListener('hashchange',()=>route().catch(error));await route();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>notify('Offline setup unavailable; your books are still stored locally.'));
