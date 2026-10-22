@@ -5,7 +5,7 @@ function fixture(){const files={mimetype:'application/epub+zip','META-INF/contai
 test.beforeEach(async({page})=>{
  await page.route('https://accounts.google.com/**',r=>r.abort());
  await page.route('https://en.wiktionary.org/**',r=>r.fulfill({json:{it:[{partOfSpeech:'Noun',definitions:[{definition:'feminine form of <a href="/wiki/amico">amico</a>'}]}]}}));
- await page.route('https://translate.googleapis.com/**',r=>{const q=new URL(r.request().url()).searchParams.get('q');return r.fulfill({json:[[[q.includes(' ')?'The friend is already here.':'friend',q]]]});});
+ await page.route(/https:\/\/translate\.(?:googleapis|google)\.com\//,r=>{const q=new URL(r.request().url()).searchParams.get('q');return r.fulfill({json:[[[q.includes(' ')?'The friend is already here.':'friend',q]]]});});
  await page.goto('/domshop/reader/');await expect(page.locator('#library')).toBeVisible();await expect(page.locator('#epubInput')).toBeEnabled();
 });
 test('EPUB3, Unicode, lookup, duplicates, phrases, marks, preferences, reload, direct links and offline',async({page,context},info)=>{
@@ -25,9 +25,9 @@ test('EPUB3, Unicode, lookup, duplicates, phrases, marks, preferences, reload, d
 test('real Volume 2 EPUB parses spine and NCX and survives chapter navigation',async({page},info)=>{
  test.skip(!real,'Set TEST_EPUB to the private test book.');await page.locator('#epubInput').setInputFiles(real);await expect(page.locator('#reading')).toBeVisible();const b=await page.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('domshop-epub-library',1);r.onsuccess=()=>{const q=r.result.transaction('books').objectStore('books').getAll();q.onsuccess=()=>resolve(q.result.map(b=>({title:b.title,chapters:b.chapters.length,toc:b.toc.length,text:b.chapters.flatMap(c=>c.blocks.map(b=>b.text||'')).join(' ')}))[0]);};r.onerror=reject;}));expect(b.title).toContain('Volume 2');expect(b.chapters).toBe(114);expect(b.toc).toBe(15);expect(b.text).toMatch(/[èéàùìò]/);await page.getByRole('button',{name:'Table of contents',exact:true}).click();await expect(page.locator('.tocLink')).toHaveCount(b.toc);const target=page.locator('.tocLink').filter({hasText:/capitolo|capítulo|capítulo|mistero|storia|casa/i}).first();if(await target.count())await target.click();else await page.locator('.tocLink').nth(10).click();await expect(page.locator('#reader p').first()).toBeVisible();await page.screenshot({path:test.info().outputPath(info.project.name+'-volume2.png'),fullPage:false});
 });
-test('failed lookup can be retried and manually saved without losing context',async({page})=>{await page.route('https://translate.googleapis.com/**',r=>r.fulfill({status:503,body:'Unavailable'}));await page.locator('#epubInput').setInputFiles(fixture());await page.locator('.word').filter({hasText:/^Perché$/}).click();await expect(page.getByRole('button',{name:'Retry lookup',exact:true})).toBeVisible();await page.getByLabel('English meaning',{exact:true}).fill('why');await page.getByRole('button',{name:'Save to Parola',exact:true}).click();await expect(page.getByRole('button',{name:'Saved',exact:true})).toBeVisible();const rows=await page.evaluate(async()=>ItalianCore.project(await ItalianStore.read()));expect(rows[0].entry.translation).toBe('why');expect(rows[0].entry.sentence).toContain('Perché');});
+test('failed lookup can be retried and manually saved without losing context',async({page})=>{await page.route(/https:\/\/translate\.(?:googleapis|google)\.com\//,r=>r.fulfill({status:503,body:'Unavailable'}));await page.locator('#epubInput').setInputFiles(fixture());await page.locator('.word').filter({hasText:/^Perché$/}).click();await expect(page.getByRole('button',{name:'Retry lookup',exact:true})).toBeVisible();await page.getByLabel('English meaning',{exact:true}).fill('why');await page.getByRole('button',{name:'Save to Parola',exact:true}).click();await expect(page.getByRole('button',{name:'Saved',exact:true})).toBeVisible();const rows=await page.evaluate(async()=>ItalianCore.project(await ItalianStore.read()));expect(rows[0].entry.translation).toBe('why');expect(rows[0].entry.sentence).toContain('Perché');});
 test('saving commits immediately while translation is stalled and displays storage errors inside the dialog',async({page})=>{
- const pending=[];await page.route('https://translate.googleapis.com/**',r=>pending.push(r));await page.locator('#epubInput').setInputFiles(fixture());await page.locator('.word').filter({hasText:/^Perché$/}).click();await page.getByRole('button',{name:'Save to Parola',exact:true}).click();await expect(page.getByRole('button',{name:'Saved',exact:true})).toBeVisible();await expect(page.locator('.saveStatus')).toContainText('this browser');const rows=await page.evaluate(async()=>ItalianCore.project(await ItalianStore.read()));expect(rows).toHaveLength(1);expect(rows[0].entry.word).toBe('Perché');expect(rows[0].entry.translation).toBe('');
+ const pending=[];await page.route(/https:\/\/translate\.(?:googleapis|google)\.com\//,r=>pending.push(r));await page.locator('#epubInput').setInputFiles(fixture());await page.locator('.word').filter({hasText:/^Perché$/}).click();await page.getByRole('button',{name:'Save to Parola',exact:true}).click();await expect(page.getByRole('button',{name:'Saved',exact:true})).toBeVisible();await expect(page.locator('.saveStatus')).toContainText('this browser');const rows=await page.evaluate(async()=>ItalianCore.project(await ItalianStore.read()));expect(rows).toHaveLength(1);expect(rows[0].entry.word).toBe('Perché');expect(rows[0].entry.translation).toBe('');
  await page.getByRole('button',{name:'Close lookup',exact:true}).click();await page.locator('.word').filter({hasText:/^chiese$/}).click();await page.evaluate(()=>{ItalianStore.capture=async()=>{throw Error('Storage unavailable for test');};});await page.getByRole('button',{name:'Save to Parola',exact:true}).click();await expect(page.locator('.saveStatus')).toHaveText('Not saved: Storage unavailable for test');await expect(page.getByRole('button',{name:'Save to Parola',exact:true})).toBeEnabled();for(const r of pending)await r.abort();
 });
 test('reader follows Parola account changes and recovers earlier guest saves without deleting them',async({page,context})=>{
@@ -67,3 +67,19 @@ test('offline shell reopens an imported EPUB without network',async({browser},in
 
 
 
+
+test('Google host fallback handles browser Load failed and offers direct links if both hosts fail',async({page})=>{
+ await page.route('https://translate.googleapis.com/**',r=>r.abort());
+ await page.locator('#epubInput').setInputFiles(fixture());await page.locator('.word').filter({hasText:/^Perché$/}).click();
+ await expect(page.getByLabel('English meaning',{exact:true})).toHaveValue('friend');
+ await page.getByRole('button',{name:'Close lookup',exact:true}).click();
+ await page.route('https://translate.google.com/**',r=>r.abort());
+ await page.locator('.word').filter({hasText:/^chiese$/}).click();
+ await expect(page.locator('#lookupBody')).toContainText('Cannot reach Google translation');
+ await expect(page.getByRole('link',{name:'Open word in Google Translate ↗',exact:true})).toHaveAttribute('href',/text=chiese/);
+ await page.getByRole('button',{name:'Retry lookup',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Retry lookup',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Reveal sentence translation',exact:true}).click();
+ await expect(page.getByRole('link',{name:'Open sentence in Google Translate ↗',exact:true})).toBeVisible();
+ await expect(page.locator('#lookup')).toBeVisible();
+});

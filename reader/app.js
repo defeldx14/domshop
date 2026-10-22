@@ -125,13 +125,7 @@ function selection(){
 const selectionButton=button('Look up selection',document.body,()=>{const s=selection();if(s)lookup(s);});selectionButton.id='selectionLookup';selectionButton.hidden=true;
 let selectionTimer;document.addEventListener('selectionchange',()=>{clearTimeout(selectionTimer);selectionTimer=setTimeout(()=>{selectionButton.hidden=$('panel').open||$('lookup').open||!selection();},180);});
 $('reader').addEventListener('click',e=>{if($('lookup').open)return;const s=selection();if(s){lookup(s);return;}const span=e.target.closest('.word');if(!span)return;const block=Number(span.closest('[data-block]').dataset.block);lookup({block,start:Number(span.dataset.start),end:Number(span.dataset.end),text:span.textContent});});
-const translationCache=new Map();
-async function translate(text){
- if(translationCache.has(text))return translationCache.get(text);
- const key='it-en/'+text,cached=await guest.get(key,null);if(cached){translationCache.set(text,cached);return cached;}
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),18000);
- try{const url=new URL('https://translate.googleapis.com/translate_a/single');url.search=new URLSearchParams({client:'gtx',sl:'it',tl:'en',dt:'t',q:text});const r=await fetch(url,{signal:ctrl.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!r.ok)throw Error('Translation unavailable. Retry or enter a meaning.');const data=await r.json();const result=data?.[0]?.filter(r=>Array.isArray(r)&&typeof r[0]==='string').map(r=>r[0]).join('').trim();if(!result)throw Error('No translation found.');translationCache.set(text,result);await guest.set(key,result);return result;}finally{clearTimeout(timer);}
-}
+const {translate}=ReaderTranslation.create({cache:guest});
 async function grammar(word){
  if(word.includes(' '))return '';
  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),7000);
@@ -151,9 +145,12 @@ async function lookup(pick){
  const meta=node('div','',body,'grammar');const dictionary=node('a','Wiktionary ↗',body,'textLink');dictionary.href='https://en.wiktionary.org/wiki/'+encodeURIComponent(pick.text.toLocaleLowerCase('it'))+'#Italian';dictionary.target='_blank';dictionary.rel='noopener';
  const l=node('label',undefined,body,'field');node('span','ENGLISH',l);const meaning=node('input',undefined,l);meaning.setAttribute('aria-label','English meaning');meaning.placeholder='Looking up…';
  const status=node('p','',body,'muted');let meaningEdited=false,savedId=null;meaning.oninput=()=>{meaningEdited=true;entry.translation=meaning.value;};
+ function googleLink(text,label,parent){const a=node('a',label,parent,'textLink');a.href='https://translate.google.com/?'+new URLSearchParams({sl:'it',tl:'en',text,op:'translate'});a.target='_blank';a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';a.hidden=true;return a;}
  const retry=button('Retry lookup',body,loadTranslation);retry.hidden=true;
+ const wordFallback=googleLink(pick.text,'Open word in Google Translate ↗',body);
  node('p',sentence,body,'context');const english=node('p','',body,'muted');
- const sentenceButton=button('Reveal sentence translation',body,async()=>{sentenceButton.disabled=true;english.textContent='Translating…';try{const result=await translate(sentence);if(epoch!==lookupEpoch)return;entry.sentenceTranslation=result;english.textContent=result;sentenceButton.hidden=true;}catch(e){if(epoch===lookupEpoch){english.textContent=e.name==='AbortError'?'Translation timed out. Retry.':e.message;sentenceButton.disabled=false;}}});
+ const sentenceFallback=googleLink(sentence,'Open sentence in Google Translate ↗',body);
+ const sentenceButton=button('Reveal sentence translation',body,async()=>{sentenceButton.disabled=true;sentenceFallback.hidden=true;english.textContent='Translating…';try{const result=await translate(sentence);if(epoch!==lookupEpoch)return;entry.sentenceTranslation=result;english.textContent=result;sentenceButton.hidden=true;}catch(e){if(epoch===lookupEpoch){english.textContent=e.name==='AbortError'?'Translation timed out. Retry.':e.message;sentenceButton.disabled=false;sentenceFallback.hidden=false;}}});
  const editLabel=node('label',undefined,body,'field'),editEnglish=node('textarea',undefined,editLabel);editLabel.hidden=true;node('span','SENTENCE IN ENGLISH',editLabel);editEnglish.setAttribute('aria-label','English sentence');editEnglish.oninput=()=>entry.sentenceTranslation=editEnglish.value;
  button('Edit sentence translation',body,()=>{editLabel.hidden=false;editEnglish.value=entry.sentenceTranslation;editEnglish.focus();});
  const actions=node('div',undefined,body,'row lookupActions');
@@ -180,7 +177,7 @@ async function lookup(pick){
  button('Highlight',actions,()=>{updateState('mark/'+crypto.randomUUID(),{book:context.book,chapter:context.chapter,block:pick.block,start:pick.start,end:pick.end,kind:'highlight',text:pick.text,at:new Date().toISOString()});renderChapter();notify('Highlight saved.');});
  button('Copy import row',actions,async()=>{const safe=s=>s.replace(/\|/g,'¦').replace(/[\r\n]+/g,' ');await navigator.clipboard.writeText([entry.word,meaning.value,entry.sentence,entry.sentenceTranslation].map(safe).join(' | '));notify('Parola import row copied.');});
  getSelection()?.removeAllRanges();selectionButton.hidden=true;if(!$('lookup').open)$('lookup').showModal();
- async function loadTranslation(){retry.hidden=true;status.textContent='';try{const t=await translate(pick.text);if(!meaningEdited){if(epoch===lookupEpoch)meaning.value=t;entry.translation=t;await fillSaved('translation',t);}if(epoch===lookupEpoch)meaning.placeholder='English meaning';}catch(e){if(epoch===lookupEpoch){status.textContent=e.name==='AbortError'?'Lookup timed out. Retry or enter a meaning.':e.message;meaning.placeholder='Enter English meaning';retry.hidden=false;}}}
+ async function loadTranslation(){retry.hidden=true;wordFallback.hidden=true;status.textContent='Looking up…';try{const t=await translate(pick.text);if(!meaningEdited){if(epoch===lookupEpoch)meaning.value=t;entry.translation=t;await fillSaved('translation',t);}if(epoch===lookupEpoch){meaning.placeholder='English meaning';status.textContent='';}}catch(e){if(epoch===lookupEpoch){status.textContent=e.name==='AbortError'?'Lookup timed out. Retry or enter a meaning.':e.message;meaning.placeholder='Enter English meaning';retry.hidden=false;wordFallback.hidden=false;}}}
  loadTranslation();grammar(pick.text).then(t=>{if(epoch===lookupEpoch)meta.textContent=t;});
 }
 async function syncReading(token,accountId){
